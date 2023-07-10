@@ -22,5 +22,12 @@
 #include <QPainter>
 #include <QtMath>
 #include <QtCore/qmath.h>
+#include <string>
+#include <cstring>
+#include <iostream>
+#include <stdio.h>
+#include <string.h>
+
+using namespace std;
 
 #endif // INCLUDER_H

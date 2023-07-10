@@ -17,19 +17,27 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+public slots:
+    void updateSafeValue();
 
 private slots:
     void on_addButton_clicked();    // СЛОТ-обработчик нажатия кнопки добавления
+
+    void on_addButton_2_clicked();
 
 private:
     Ui::MainWindow *ui;
     QGraphicsScene *safeScene;
     QGraphicsScene *quarScene;
+
     QTimer animTimer;
+    QTimer recoveredTimer;
     QTimer quarTimer;
 
     People* people;
     Areal* safeAreal;
     Areal* quarAreal;
+
+    QString safeValueStr;
 };
 #endif // MAINWINDOW_H
