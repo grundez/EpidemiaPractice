@@ -6,8 +6,8 @@
 #include <QGraphicsEllipseItem>
 #include <queue>
 #include <vector>
+#include <string>
 
-using namespace std;
 
 const int inf = 999999;
 
@@ -17,10 +17,11 @@ class Areal;
 class People : public QObject, public QGraphicsEllipseItem
 {
 public:
-    People(int radius, Areal* safeA,Areal* quarA, string st);
+    People(int r, Areal* areal, std::string st);
+    People(int radius, Areal* safeA,Areal* quarA, std::string st);
     ~People();
     int idCounter = 0;
-    string getStatus();
+    std::string getStatus();
     int getRadius();
     int getSpeed();;
     int getId();
@@ -47,6 +48,23 @@ public:
     int deadChanse;
     int invisInfectiousChanse;
 
+    void addNewSusceptible(int newCount);
+    void addNewInfected(int newCount);
+    void addNewAsymptomatic(int newCount);
+    void addNewRecovered(int newCount);
+    void addNewDeaths(int newCount);
+
+    QVector<int> getSusceptible();
+    QVector<int> getInfected();
+    QVector<int> getAsymptomatic();
+    QVector<int> getRecovered();
+    QVector<int> getDeaths();
+
+    int infec = 0;
+    int suscept = 0;
+    int recovered = 0;
+    int invis = 0;
+    int dead = 0;
    // QTimer quarTimer;         // Таймер для проверки карантина
     //QTimer recoveredTimer;    // Таймер для проверки выздоровления
 
@@ -58,7 +76,7 @@ protected:
     void advance(int step) override;
 
 private:
-    string status;
+    std::string status;
     int status_int;
     int count;
     QColor color;
@@ -77,6 +95,13 @@ private:
     Areal* areal; // Добавляем указатель на объект areal
     Areal* safeAreal;
     Areal* quarAreal;
+    Areal* statAreal;
+
+    QVector<int> dataNonInfected;
+    QVector<int> dataInfected;
+    QVector<int> dataAsymptomatic;
+    QVector<int> dataRecovered;
+    QVector<int> dataDeaths;
 
     //QTimer quarTimer;         // Таймер для проверки карантина
     //QTimer recoveredTimer;    // Таймер для проверки выздоровления

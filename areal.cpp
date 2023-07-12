@@ -1,4 +1,5 @@
 #include "Areal.h"
+#include "people.h"
 #include <set>
 
 Areal::Areal()
@@ -29,6 +30,11 @@ void Areal::addNewPeople(People *People)
     otherPeoples.append(People);
 }
 
+void Areal::removePeople()
+{
+    otherPeoples.remove(otherPeoples.size()-1);
+}
+
 void Areal::addNewRadius(int radius)
 {
     listSafeRadiuses.append(radius);
@@ -55,13 +61,33 @@ void Areal::printCorridorStatus() const {
 }
 
 int Areal::getSafeRadius(){
-    int summRadius = 0;
-    for(const auto& radius : listSafeRadiuses){
-        summRadius += radius;
+    if(listSafeRadiuses.size()>0 && otherPeoples.size() > 0){
+        int summRadius = 0;
+        for(const auto& radius : listSafeRadiuses){
+            summRadius += radius;
+        }
+
+        int delitel = 1;
+        for(const auto& people : otherPeoples){
+            if(people->getStatus() == "Infectious"){
+                delitel++;
+            }
+            safeRadius = summRadius / (delitel*2);
+        }
+
+        safeRadius = safeRadius/100; //коэф списка радиусов
+        clearSafeDistances();
     }
-    //коэф списка радиусов
-    safeRadius = summRadius / listSafeRadiuses.size();
     return safeRadius;
+}
+
+void Areal::clearSafeDistances(){
+    listSafeRadiuses.clear();
+}
+
+void Areal::deleteListPeoples()
+{
+    otherPeoples.clear();
 }
 
 std::string Areal::getTitle()

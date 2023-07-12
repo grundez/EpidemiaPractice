@@ -28,6 +28,5 @@
 #include <stdio.h>
 #include <string.h>
 
-using namespace std;
 
 #endif // INCLUDER_H

@@ -5,7 +5,25 @@
 constexpr qreal Pi = M_PI;
 constexpr qreal TwoPi = 2 * M_PI;
 
-People::People(int r, Areal* safeA,Areal* quarA, string st) : QGraphicsEllipseItem(0)
+People::People(int r, Areal* areal, std::string st) : QGraphicsEllipseItem(0)
+{
+    idCounter++;
+    idPeople = idCounter;
+    radius = r;
+    speed = 0;
+    steps=0;
+    randMoveX = 0;
+    randMoveY = 0;
+    xpos =0;
+    ypos = 0;
+    statAreal = areal;
+    angle = 0;
+    count =0;
+    setRotation(QRandomGenerator::global()->bounded(360 * 16));
+    status = st;
+}
+
+People::People(int r, Areal* safeA,Areal* quarA, std::string st) : QGraphicsEllipseItem(0)
 {
     idCounter++;
     idPeople = idCounter;
@@ -50,7 +68,7 @@ QColor People::getColor()
     return color;
 }
 
-string People::getStatus()
+std::string People::getStatus()
 {
     return status;
 }
@@ -96,6 +114,47 @@ int People::getY()
 {
     return ypos;
 }
+
+void People::addNewSusceptible(int newCount){
+    dataNonInfected.append(newCount);
+}
+
+void People::addNewInfected(int newCount){
+    dataInfected.append(newCount);
+}
+
+void People::addNewAsymptomatic(int newCount){
+    dataAsymptomatic.append(newCount);
+}
+
+void People::addNewRecovered(int newCount){
+    dataRecovered.append(newCount);
+}
+
+void People::addNewDeaths(int newCount){
+    dataDeaths.append(newCount);
+}
+
+QVector<int> People::getSusceptible(){
+    return dataNonInfected;
+}
+
+QVector<int> People::getInfected(){
+    return dataInfected;
+}
+QVector<int> People::getAsymptomatic(){
+    return dataAsymptomatic;
+}
+
+QVector<int> People::getRecovered(){
+    return dataRecovered;
+}
+
+QVector<int> People::getDeaths(){
+    return dataDeaths;
+}
+
+
 
 static qreal normalizeAngle(qreal angle)
 {
@@ -235,221 +294,253 @@ void People::advance(int step)
     if (!step)
         return;
 
-    if(status != "Dead"){
-    // Don't move too far away
-        for(const auto& zone : areal->getZone()){
-            if(zone->getTitle() == "safe"){
-                QLineF lineToCenter(QPointF(0, 0), mapFromScene(270, 230));
-                if (lineToCenter.length() > 150) {
-                    qreal angleToCenter = std::atan2(lineToCenter.dy(), lineToCenter.dx());
-                    angleToCenter = normalizeAngle((Pi - angleToCenter) + Pi / 2);
-
-                    if (angleToCenter < Pi && angleToCenter > Pi / 4) {
-                        // Rotate left
-                        angle += (angle < -Pi / 2) ? 0.25 : -0.25;
-                    } else if (angleToCenter >= Pi && angleToCenter < (Pi + Pi / 2 + Pi / 4)) {
-                        // Rotate right
-                        angle += (angle < Pi / 2) ? 0.25 : -0.25;
-                    }
-                } else if (::sin(angle) < 0) {
-                    angle += 0.25;
-                } else if (::sin(angle) > 0) {
-                    angle -= 0.25;
-                }
+    if(safeAreal->getOtherPeoples().size()> 1){
+        for(const auto& people : safeAreal->getOtherPeoples()){
+            if (status == "Infectious"){
+                infec++;
             }
-            else{
-                QLineF lineToCenter(QPointF(0, 0), mapFromScene(780, 400));
-                if (lineToCenter.length() > 5) {
-                    qreal angleToCenter = std::atan2(lineToCenter.dy(), lineToCenter.dx());
-                    angleToCenter = normalizeAngle((Pi - angleToCenter) + Pi / 2);
-
-                    if (angleToCenter < Pi && angleToCenter > Pi / 4) {
-                        // Rotate left
-                        angle += (angle < -Pi / 2) ? 0.25 : -0.25;
-                    } else if (angleToCenter >= Pi && angleToCenter < (Pi + Pi / 2 + Pi / 4)) {
-                        // Rotate right
-                        angle += (angle < Pi / 2) ? 0.25 : -0.25;
-                    }
-                } else if (::sin(angle) < 0) {
-                    angle += 0.25;
-                } else if (::sin(angle) > 0) {
-                    angle -= 0.25;
-                }
+            if(status == "Susceptible"){
+                suscept++;
+            }
+            else if(status == "Recovered"){
+                recovered++;
+            }
+            else if(status == "InvisibleInfectious"){
+                invis++;
+            }
+            else if(status == "Dead"){
+                dead++;
             }
         }
+    }
 
+    addNewInfected(infec);
+    addNewSusceptible(suscept);
+    addNewAsymptomatic(invis);
+    addNewRecovered(recovered);
+    addNewDeaths(dead);
 
-        // Try not to crash with any other mice
-        const QList<QGraphicsItem *> dangerItem = scene()->items(QPolygonF()
-                                                                 << mapToScene(0, 0)
-                                                                 << mapToScene(-30, -50)
-                                                                 << mapToScene(30, -50));
+    if(areal == statAreal){
+        setPos(12,620);
+    }
+    else{
 
-        for (const QGraphicsItem *item : dangerItem) {
-            if (item == this){
-                continue;
-            }
-
-            QLineF lineToPeople(QPointF(0, 0), mapFromItem(item, 0, 0));
-            qreal angleToPeople = std::atan2(lineToPeople.dy(), lineToPeople.dx());
-            angleToPeople = normalizeAngle((Pi - angleToPeople) + Pi / 2);
-
-            if (angleToPeople >= 0 && angleToPeople < Pi / 2) {
-                // Rotate right
-                angle += 0.5;
-            } else if (angleToPeople <= TwoPi && angleToPeople > (TwoPi - Pi / 2)) {
-                // Rotate left
-                angle -= 0.5;
-            }
-        }
-
-        for(const auto& people : areal->getOtherPeoples()){
-            if(people != this
-                && (status == "Susceptible" && (people->status == "Infectious" || people->status == "InvisibleInfectious"))){
-                QLineF lineToPeople(QPointF(0, 0), mapFromItem(people, 0, 0));
-                qreal distanceToPeople = lineToPeople.length();  // Расстояние до больного
-                qreal safeDistance = radius + people->getRadius();  // Безопасное расстояние
-
-                //Запись новой дистанции среди людей
-                int intDistance = static_cast<int>(distanceToPeople);
-                areal->addNewRadius(intDistance);
-
-
-                if(distanceToPeople < safeDistance && (QRandomGenerator::global()->bounded(1,101) <= infectiousChanse)){
-                    if(QRandomGenerator::global()->bounded(1,101) > invisInfectiousChanse){
-                        status = "Infectious";
-                    }
-                    else{
-                        status = "InvisibleInfectious";
-                    }
-                }
-            }
-        }
-
-        // Add some random movement
-        if (dangerItem.size()>1 && QRandomGenerator::global()->bounded(10) == 0) {
-            if (QRandomGenerator::global()->bounded(1))
-                angle += QRandomGenerator::global()->bounded(1 / 500.0);
-            else
-                angle -= QRandomGenerator::global()->bounded(1 / 500.0);
-        }
-
-        speed += (-50 + QRandomGenerator::global()->bounded(100)) / 100.0;
-        qreal dx = ::sin(angle) * 10;
-        PeopleEyeDirection = (qAbs(dx / 5) < 1) ? 0 : dx / 5;
-
-
-            setRotation(rotation() + dx);
-            setPos(mapToParent(0, -(3 + cos(speed) * 3)));
-
-        // Ограничение перемещения
-            //В декартовы координаты
-            int x = static_cast<int>(pos().x());
-            int y = static_cast<int>(pos().y());
-
+        if(status != "Dead"){
+        // Don't move too far away
             for(const auto& zone : areal->getZone()){
-                if (x < zone->getStartX()) {
-                    setPos(zone->getStartX(), pos().y());
-                    angle = Pi;
-                } else if (x > zone->getEndX()) {
-                    setPos(zone->getEndX(), pos().y());
-                    angle = Pi;
-                }
+                if(zone->getTitle() == "safe"){
+                    QLineF lineToCenter(QPointF(0, 0), mapFromScene(270, 230));
+                    if (lineToCenter.length() > 150) {
+                        qreal angleToCenter = std::atan2(lineToCenter.dy(), lineToCenter.dx());
+                        angleToCenter = normalizeAngle((Pi - angleToCenter) + Pi / 2);
 
-                if (y < zone->getStartY()) {
-                    setPos(pos().x(), zone->getStartY());
-                    angle = Pi;
-                } else if (y > zone->getEndY()) {
-                    setPos(pos().x(), zone->getEndY());
-                    angle = Pi;
+                        if (angleToCenter < Pi && angleToCenter > Pi / 4) {
+                            // Rotate left
+                            angle += (angle < -Pi / 2) ? 0.25 : -0.25;
+                        } else if (angleToCenter >= Pi && angleToCenter < (Pi + Pi / 2 + Pi / 4)) {
+                            // Rotate right
+                            angle += (angle < Pi / 2) ? 0.25 : -0.25;
+                        }
+                    } else if (::sin(angle) < 0) {
+                        angle += 0.25;
+                    } else if (::sin(angle) > 0) {
+                        angle -= 0.25;
+                    }
+                }
+                else{
+                    QLineF lineToCenter(QPointF(0, 0), mapFromScene(780, 400));
+                    if (lineToCenter.length() > 5) {
+                        qreal angleToCenter = std::atan2(lineToCenter.dy(), lineToCenter.dx());
+                        angleToCenter = normalizeAngle((Pi - angleToCenter) + Pi / 2);
+
+                        if (angleToCenter < Pi && angleToCenter > Pi / 4) {
+                            // Rotate left
+                            angle += (angle < -Pi / 2) ? 0.25 : -0.25;
+                        } else if (angleToCenter >= Pi && angleToCenter < (Pi + Pi / 2 + Pi / 4)) {
+                            // Rotate right
+                            angle += (angle < Pi / 2) ? 0.25 : -0.25;
+                        }
+                    } else if (::sin(angle) < 0) {
+                        angle += 0.25;
+                    } else if (::sin(angle) > 0) {
+                        angle -= 0.25;
+                    }
                 }
             }
 
-            //Если карантин нужен
-            if(quarNeeds){
-                if (status == "Recovered" && areal == quarAreal) {
+
+            // Try not to crash with any other mice
+            const QList<QGraphicsItem *> dangerItem = scene()->items(QPolygonF()
+                                                                     << mapToScene(0, 0)
+                                                                     << mapToScene(-30, -50)
+                                                                     << mapToScene(30, -50));
+
+            for (const QGraphicsItem *item : dangerItem) {
+                if (item == this){
+                    continue;
+                }
+
+                QLineF lineToPeople(QPointF(0, 0), mapFromItem(item, 0, 0));
+                qreal angleToPeople = std::atan2(lineToPeople.dy(), lineToPeople.dx());
+                angleToPeople = normalizeAngle((Pi - angleToPeople) + Pi / 2);
+
+                if (angleToPeople >= 0 && angleToPeople < Pi / 2) {
+                    // Rotate right
+                    angle += 0.5;
+                } else if (angleToPeople <= TwoPi && angleToPeople > (TwoPi - Pi / 2)) {
+                    // Rotate left
+                    angle -= 0.5;
+                }
+            }
+
+            for(const auto& people : areal->getOtherPeoples()){
+                if(people != this
+                    && (status == "Susceptible" && (people->status == "Infectious" || people->status == "InvisibleInfectious"))){
+                    QLineF lineToPeople(QPointF(0, 0), mapFromItem(people, 0, 0));
+                    qreal distanceToPeople = lineToPeople.length();  // Расстояние до больного
+                    qreal safeDistance = radius + people->getRadius();  // Безопасное расстояние
+
+                    //Запись новой дистанции среди людей
+                    int intDistance = static_cast<int>(distanceToPeople);
+                    areal->addNewRadius(intDistance);
+
+
+                    if(distanceToPeople < safeDistance && (QRandomGenerator::global()->bounded(1,101) <= infectiousChanse)){
+                        if(QRandomGenerator::global()->bounded(1,101) > invisInfectiousChanse){
+                            status = "Infectious";
+                        }
+                        else{
+                            status = "InvisibleInfectious";
+                        }
+                    }
+                }
+            }
+
+            // Add some random movement
+            if (dangerItem.size()>1 && QRandomGenerator::global()->bounded(10) == 0) {
+                if (QRandomGenerator::global()->bounded(1))
+                    angle += QRandomGenerator::global()->bounded(1 / 500.0);
+                else
+                    angle -= QRandomGenerator::global()->bounded(1 / 500.0);
+            }
+
+            speed += (-50 + QRandomGenerator::global()->bounded(100)) / 100.0;
+            qreal dx = ::sin(angle) * 10;
+            PeopleEyeDirection = (qAbs(dx / 5) < 1) ? 0 : dx / 5;
+
+
+                setRotation(rotation() + dx);
+                setPos(mapToParent(0, -(3 + cos(speed) * 3)));
+
+            // Ограничение перемещения
+                //В декартовы координаты
+                int x = static_cast<int>(pos().x());
+                int y = static_cast<int>(pos().y());
+
+                for(const auto& zone : areal->getZone()){
+                    if (x < zone->getStartX()) {
+                        setPos(zone->getStartX(), pos().y());
+                        angle = Pi;
+                    } else if (x > zone->getEndX()) {
+                        setPos(zone->getEndX(), pos().y());
+                        angle = Pi;
+                    }
+
+                    if (y < zone->getStartY()) {
+                        setPos(pos().x(), zone->getStartY());
+                        angle = Pi;
+                    } else if (y > zone->getEndY()) {
+                        setPos(pos().x(), zone->getEndY());
+                        angle = Pi;
+                    }
+                }
+
+                //Если карантин нужен
+                if(quarNeeds){
+                    if (status == "Recovered" && areal == quarAreal) {
+                        QTimer* timer = new QTimer(this);
+                        connect(timer, &QTimer::timeout, this, [=]() {
+                            if (!recoveredFromQuar) {
+                                setPos(QRandomGenerator::global()->bounded(30, 540),
+                                       QRandomGenerator::global()->bounded(30, 450));
+                                exitQuar(safeAreal);
+                                safeAreal->getScene()->addItem(this);
+                            }
+                            timer->deleteLater();
+                        });
+                        timer->start(3000);
+                    }
+
+                    if (status == "Infectious" && areal == safeAreal) {
+                        QTimer* timer = new QTimer(this);
+                        connect(timer, &QTimer::timeout, this, [=]() {
+                            if (!wasInQuar) {
+                                setPos(QRandomGenerator::global()->bounded(640, 900),
+                                       QRandomGenerator::global()->bounded(270, 500));
+                                setQuar(quarAreal);
+                                quarAreal->getScene()->addItem(this);
+                            }
+                            timer->deleteLater();
+                        });
+                        timer->start(3000);
+                    }
+                }
+
+                if ((status == "Infectious" || status == "InvisibleInfectious")) {
                     QTimer* timer = new QTimer(this);
                     connect(timer, &QTimer::timeout, this, [=]() {
-                        if (!recoveredFromQuar) {
+                        if (!alreadyChanged) {
+                            alreadyChanged = true;
+                            if (QRandomGenerator::global()->bounded(1, 101) >= deadChanse) {
+                                status = "Recovered";
+                            } else {
+                                status = "Dead";
+                            }
+                        }
+                        timer->deleteLater();
+                    });
+                    timer->start(7000);
+                }
+
+                /*
+                if ((status == "Infectious" || status == "InvisibleInfectious")) {
+
+                    QTimer::singleShot(5000, [this]() { // Добавлено захватывание по ссылке флага alreadyChanged
+                        if (!alreadyChanged) { // Проверка флага перед изменением статуса
+                            alreadyChanged = true; // Устанавливаем флаг уже измененного статуса
+
+                            if (QRandomGenerator::global()->bounded(1, 101) >= 5) {
+                                status = "Recovered";
+                            } else {
+                                status = "Dead";
+                            }
+                        }
+                    });
+                }
+
+                if (status == "Recovered" && areal==quarAreal) {
+                    QTimer::singleShot(2000, [this]() {
+                        if(!recoveredFromQuar){
                             setPos(QRandomGenerator::global()->bounded(30, 540),
-                                   QRandomGenerator::global()->bounded(30, 450));
-                            exitQuar(safeAreal);
-                            safeAreal->getScene()->addItem(this);
+                                   QRandomGenerator::global()->bounded(30,450));
                         }
-                        timer->deleteLater();
+                        exitQuar(safeAreal);
+                        safeAreal->getScene()->addItem(this);
                     });
-                    timer->start(3000);
                 }
 
-                if (status == "Infectious" && areal == safeAreal) {
-                    QTimer* timer = new QTimer(this);
-                    connect(timer, &QTimer::timeout, this, [=]() {
-                        if (!wasInQuar) {
-                            setPos(QRandomGenerator::global()->bounded(640, 900),
-                                   QRandomGenerator::global()->bounded(270, 500));
-                            setQuar(quarAreal);
-                            quarAreal->getScene()->addItem(this);
+                if (status == "Infectious" && areal==safeAreal) {
+                    QTimer::singleShot(2000, [this]() {
+                        if(!wasInQuar){
+                            setPos(QRandomGenerator::global()->bounded(640,780),
+                                   QRandomGenerator::global()->bounded(440,530));
                         }
-                        timer->deleteLater();
+                        setQuar(quarAreal);
+                        quarAreal->getScene()->addItem(this);
                     });
-                    timer->start(3000);
                 }
-            }
-
-            if ((status == "Infectious" || status == "InvisibleInfectious")) {
-                QTimer* timer = new QTimer(this);
-                connect(timer, &QTimer::timeout, this, [=]() {
-                    if (!alreadyChanged) {
-                        alreadyChanged = true;
-                        if (QRandomGenerator::global()->bounded(1, 101) >= deadChanse) {
-                            status = "Recovered";
-                        } else {
-                            status = "Dead";
-                        }
-                    }
-                    timer->deleteLater();
-                });
-                timer->start(7000);
-            }
-
-            /*
-            if ((status == "Infectious" || status == "InvisibleInfectious")) {
-
-                QTimer::singleShot(5000, [this]() { // Добавлено захватывание по ссылке флага alreadyChanged
-                    if (!alreadyChanged) { // Проверка флага перед изменением статуса
-                        alreadyChanged = true; // Устанавливаем флаг уже измененного статуса
-
-                        if (QRandomGenerator::global()->bounded(1, 101) >= 5) {
-                            status = "Recovered";
-                        } else {
-                            status = "Dead";
-                        }
-                    }
-                });
-            }
-
-            if (status == "Recovered" && areal==quarAreal) {
-                QTimer::singleShot(2000, [this]() {
-                    if(!recoveredFromQuar){
-                        setPos(QRandomGenerator::global()->bounded(30, 540),
-                               QRandomGenerator::global()->bounded(30,450));
-                    }
-                    exitQuar(safeAreal);
-                    safeAreal->getScene()->addItem(this);
-                });
-            }
-
-            if (status == "Infectious" && areal==safeAreal) {
-                QTimer::singleShot(2000, [this]() {
-                    if(!wasInQuar){
-                        setPos(QRandomGenerator::global()->bounded(640,780),
-                               QRandomGenerator::global()->bounded(440,530));
-                    }
-                    setQuar(quarAreal);
-                    quarAreal->getScene()->addItem(this);
-                });
-            }
-            */
+                */
+        }
     } 
 }
 
