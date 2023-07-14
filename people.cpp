@@ -405,7 +405,7 @@ void People::advance(int step)
         qreal dx = ::sin(angle) * 10;
         PeopleEyeDirection = (qAbs(dx / 5) < 1) ? 0 : dx / 5;
 
-            if(status != "Dead"){
+        if(status != "Dead"){
                 setRotation(rotation() + dx);
                 setPos(mapToParent(0, -(3 + cos(speed) * 3)));
 
@@ -500,11 +500,11 @@ void People::advance(int step)
                     timer->start(7000);
                 }
 
-                if(socialZoneNeeds && areal == safeAreal && QRandomGenerator::global()->bounded(1,1000)<=100){
+                if(socialZoneNeeds && areal == safeAreal && QRandomGenerator::global()->bounded(1,1000)<=10){
                     QTimer* timer = new QTimer(this);
                     connect(timer, &QTimer::timeout, this, [=]() {
                         if (!wasInSocialZone) {
-                            //wasInSocialZone = true;
+                            wasInSocialZone = true;
                             setPos(QRandomGenerator::global()->bounded(305, 390),
                                    QRandomGenerator::global()->bounded(255, 350));
                         }
