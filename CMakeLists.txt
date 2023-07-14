@@ -25,12 +25,10 @@ set(PROJECT_SOURCES
         includer.h
         corridor.cpp
         corridor.h
-        epidemiasettings.h
-        epidemiasettings.cpp
         graphwidget.cpp
         graphwidget.h
-        circles.cpp
-        circles.h
+        epidemiasettings.cpp
+        epidemiasettings.h
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

@@ -8,14 +8,22 @@ Areal::Areal()
     height = 0;
 }
 
-Areal::Areal(int w, int h, QGraphicsScene* arealS)
+Areal::Areal(int rx, int ry, int w, int h, QGraphicsScene* arealS)
 {
+    x = rx;
+    y = ry;
     width = w;
     height = h;
     arealScene = arealS;
 }
 
+int Areal::getX(){
+    return x;
+}
 
+int Areal::getY(){
+    return y;
+}
 
 int Areal::getWidthAreal(){
     return width;

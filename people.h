@@ -1,20 +1,18 @@
 #ifndef PEOPLE_H
 #define PEOPLE_H
 
-#include "qtimer.h"
+#include "epidemiasettings.h"
 #include <QObject>
 #include <QGraphicsEllipseItem>
 #include <queue>
 #include <vector>
 #include <string>
-
-
-const int inf = 999999;
+#include "includer.h"
 
 // Перед объявлением класса University добавляем forward declaration
 class Areal;
 
-class People : public QObject, public QGraphicsEllipseItem
+class People : public QObject, public QGraphicsEllipseItem, public EpidemiaSettings
 {
 public:
     People(int r, Areal* areal, std::string st);
@@ -42,31 +40,26 @@ public:
     bool wasInQuar = false;
     bool recoveredFromQuar = false;
     bool alreadyChanged = false; // Флаг для отслеживания изменения статуса
+    bool wasInSocialZone = false;
+
+    bool socialZoneNeeds = false;
     bool quarNeeds = false;
 
-    int infectiousChanse;
-    int deadChanse;
-    int invisInfectiousChanse;
+    EpidemiaSettings settings;
+    int infectiousChanse = settings.getChanseInfected();
+    int deadChanse = settings.getChanseeDead();
+    int invisInfectiousChanse = settings.getChanseAsymptotic();
 
+    // Функции для точек графика
     void addNewSusceptible(int newCount);
     void addNewInfected(int newCount);
     void addNewAsymptomatic(int newCount);
     void addNewRecovered(int newCount);
     void addNewDeaths(int newCount);
 
-    QVector<int> getSusceptible();
-    QVector<int> getInfected();
-    QVector<int> getAsymptomatic();
-    QVector<int> getRecovered();
-    QVector<int> getDeaths();
-
-    int infec = 0;
-    int suscept = 0;
-    int recovered = 0;
-    int invis = 0;
-    int dead = 0;
-   // QTimer quarTimer;         // Таймер для проверки карантина
-    //QTimer recoveredTimer;    // Таймер для проверки выздоровления
+    void addSusceptibleCount();
+    void addInfectedCount();
+    void addInvisInfectedCount();
 
 public slots:
     void quarCheck();
@@ -92,19 +85,17 @@ private:
     qreal angle=0;
     qreal PeopleEyeDirection=0;
 
-    Areal* areal; // Добавляем указатель на объект areal
+    Areal* areal;
     Areal* safeAreal;
     Areal* quarAreal;
     Areal* statAreal;
 
-    QVector<int> dataNonInfected;
-    QVector<int> dataInfected;
-    QVector<int> dataAsymptomatic;
-    QVector<int> dataRecovered;
-    QVector<int> dataDeaths;
+    //QVector<int> dataNonInfected;
+    //QVector<int> dataInfected;
+    //QVector<int> dataAsymptomatic;
+    //QVector<int> dataRecovered;
+    //QVector<int> dataDeaths;
 
-    //QTimer quarTimer;         // Таймер для проверки карантина
-    //QTimer recoveredTimer;    // Таймер для проверки выздоровления
 };
 
 #endif // PEOPLE_H

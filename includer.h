@@ -27,6 +27,6 @@
 #include <iostream>
 #include <stdio.h>
 #include <string.h>
-
+#include "qtimer.h"
 
 #endif // INCLUDER_H

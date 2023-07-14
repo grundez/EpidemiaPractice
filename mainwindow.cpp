@@ -1,20 +1,18 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
 #include "includer.h"
-#include "graphwidget.h"
 #include "QPainter"
-#include "circles.h"
 #define frame 1000/40
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
+    , ui(new Ui::MainWindow), EpidemiaSettings()
 {
     ui->setupUi(this);
     setStyleSheet("background-color: rgb(15, 15, 15);");
     setWindowTitle("Pandemia model");
-    safeScene = new QGraphicsScene(0,0,550,460,this);
-    quarScene = new QGraphicsScene(650,260,277,277,this);
+    safeScene = new QGraphicsScene(0,0,717,607,this);
+    quarScene = new QGraphicsScene(650,260,387,387,this);
     statScene = new QGraphicsScene(0,0,18,140,this);
     ui->graphicsView->setStyleSheet("border: 2px solid white;");
     QColor backgroundColor = QColor(15,15,15);  // Цвет фона (в данном случае - светло-серый)
@@ -43,19 +41,21 @@ MainWindow::MainWindow(QWidget *parent)
     ui->spinBoxDead->setStyleSheet("QSpinBox { color: white; }");
     ui->spinBoxInvis->setStyleSheet("QSpinBox { color: white; }");
 
-    safeAreal = new Areal(safeScene->width(),safeScene->height(), safeScene);
-    quarAreal = new Areal(quarScene->width(), quarScene->height(), quarScene);
-    statAreal = new Areal(statScene->width(), statScene->height(), statScene);
 
-    Corridor *safe = new Corridor(0,0,550,460, "safe", safeScene);
-    Corridor *quar = new Corridor(660,270,900,510, "quar", quarScene);
+    safeAreal = new Areal(45, 45, (safeScene->width()-45),(safeScene->height()-45), safeScene);
+    quarAreal = new Areal(685, 285, (quarScene->width()-45), (quarScene->height()-45), quarScene);
+    statAreal = new Areal(0,0, statScene->width(), statScene->height(), statScene);
+
+    Corridor *safe = new Corridor(25,25,690,580, "safe", safeScene);
+    Corridor *quar = new Corridor(670,280,1020,620, "quar", quarScene);
+    Corridor *socialZone = new Corridor(305,255,390,340, "social", safeScene);
+
     safeAreal->addCorridor(safe);
+    //safeAreal->addCorridor(socialZone);
     quarAreal->addCorridor(quar);
 
     ui->label_4->hide();
     ui->safeValueLable->hide();
-    //ui->widget->hide();
-    //graphWidget = new GraphWidget(ui->widget);
     ui->deadLableValue->hide();
     ui->InfecLableValue->hide();
     ui->notInfecLableValue->hide();
@@ -97,13 +97,57 @@ void MainWindow::updateSafeValue()
 
 void MainWindow::updateStatistic()
 {
-    ui->safeValueLable->setStyleSheet("QLabel { font-size:14pt; font-weight:700; color: White }");
-    ui->safeValueLable->setText(safeValueStr);
+    int infected = 0;
+    int invisInfected = 0;
+    int recovered = 0;
+    int suscepteble = 0;
+    int dead = 0;
+
+    for(const auto& people : safeAreal->getOtherPeoples()){
+        if (people->getStatus() == "Infectious"){
+            infected++;
+        }
+        if(people->getStatus() == "Susceptible"){
+            suscepteble++;
+        }
+        else if(people->getStatus() == "Recovered"){
+            recovered++;
+        }
+        else if(people->getStatus() == "InvisibleInfectious"){
+            invisInfected++;
+        }
+        else if(people->getStatus() == "Dead"){
+            dead++;
+        }
+    }
+
+    infValueStr = QString::number(infected);
+    invisInfValueStr = QString::number(invisInfected);
+    recValueStr = QString::number(recovered);
+    nonInfValueStr = QString::number(suscepteble);
+    deadValueStr = QString::number(dead);
+
+    ui->deadLableValue->show();
+    ui->InfecLableValue->show();
+    ui->notInfecLableValue->show();
+    ui->recoveredLableValue->show();
+    ui->inviInfecLableValue->show();
+
+    ui->deadLableValue->setStyleSheet("QLabel { font-size:14pt; font-weight:700; color: White }");
+    ui->deadLableValue->setText(deadValueStr);
+    ui->InfecLableValue->setStyleSheet("QLabel { font-size:14pt; font-weight:700; color: White }");
+    ui->InfecLableValue->setText(infValueStr);
+    ui->notInfecLableValue->setStyleSheet("QLabel { font-size:14pt; font-weight:700; color: White }");
+    ui->notInfecLableValue->setText(nonInfValueStr);
+    ui->recoveredLableValue->setStyleSheet("QLabel { font-size:14pt; font-weight:700; color: White }");
+    ui->recoveredLableValue->setText(recValueStr);
+    ui->inviInfecLableValue->setStyleSheet("QLabel { font-size:14pt; font-weight:700; color: White }");
+    ui->inviInfecLableValue->setText(invisInfValueStr);
 }
 
 void MainWindow::on_addButton_clicked()
 {
-
+    // Лейблы и элипсы для отображения статистики
     ui->label_9->show();
     ui->label_10->show();
     ui->label_11->show();
@@ -111,40 +155,33 @@ void MainWindow::on_addButton_clicked()
     ui->label_13->show();
 
     QGraphicsEllipseItem* circle = new QGraphicsEllipseItem(0, 0, 20, 20);
-    circle->setPos(0,-7);
+    circle->setPos(0,-30);
     circle->setBrush(QColor(0,155,255));
     statScene->addItem(circle);
 
     QGraphicsEllipseItem* circle1 = new QGraphicsEllipseItem(0, 0, 20, 20);
-    circle1->setPos(0,25);
+    circle1->setPos(0,15);
     circle1->setBrush(QColor(255,0,0));
     statScene->addItem(circle1);
 
     QGraphicsEllipseItem* circle2 = new QGraphicsEllipseItem(0, 0, 20, 20);
-    circle2->setPos(0,59);
+    circle2->setPos(0,60);
     circle2->setBrush(QColor(255,255,155));
     statScene->addItem(circle2);
 
     QGraphicsEllipseItem* circle3 = new QGraphicsEllipseItem(0, 0, 20, 20);
-    circle3->setPos(0,90);
+    circle3->setPos(0,105);
     circle3->setBrush(QColor(0,255,155));
     statScene->addItem(circle3);
 
     QGraphicsEllipseItem* circle4 = new QGraphicsEllipseItem(0, 0, 20, 20);
-    circle4->setPos(0,121);
+    circle4->setPos(0,150);
     circle4->setBrush(QColor(100,100,100));
     statScene->addItem(circle4);
 
-    QObject::connect(&animTimer, &QTimer::timeout, safeScene, &QGraphicsScene::advance);
-    QObject::connect(&animTimer, &QTimer::timeout, quarScene, &QGraphicsScene::advance);
-    QObject::connect(&animTimer, &QTimer::timeout, this, &MainWindow::updateSafeValue);
-
-    //GraphWidget graphWidget;
-    //graphWidget.resize(400, 300);
-    //graphWidget.show();
-
     //Отключить старт кнопку
     ui->addButton->setEnabled(false);
+    ui->addButton_2->setEnabled(true);
 
     //Количество людей в модели
     int PeopleCount = ui->spinBox->value();
@@ -173,26 +210,28 @@ void MainWindow::on_addButton_clicked()
             people = new People(QRandomGenerator::global()->bounded(15, 20), safeAreal, quarAreal, "Susceptible"); //Не болевшие
         }
 
-        //QObject::connect(&quarTimer, &QTimer::timeout, people, &People::quarCheck);
-        //QObject::connect(&recoveredTimer, &QTimer::timeout, people, &People::recoveredCheck);
-        //quarTimer.start(2000);
-        //recoveredTimer.start(5000);
-
         safeAreal->addNewPeople(people);
         qreal x = QRandomGenerator::global()->bounded(safeSceneRect.width());
         qreal y = QRandomGenerator::global()->bounded(safeSceneRect.height());
         people->setPos(safeSceneRect.x() + x, safeSceneRect.y() + y);
+        people->setZValue(1);
         safeScene->addItem(people);
-        if(ui->checkBox->isChecked()){
-            people->quarNeeds = true;
-        }
-
 
         people->infectiousChanse = ui->spinBoxInfectious->value();
         people->deadChanse = ui->spinBoxDead->value();
         people->invisInfectiousChanse = ui->spinBoxInvis->value();
+
+        EpidemiaSettings(ui->spinBox->value(), ui->spinBoxInfectious->value(),
+                         ui->spinBoxDead->value(), ui->spinBoxInvis->value(), ui->checkBox->isChecked(),0,0);
+
+        if(ui->checkBox->isChecked())
+            people->quarNeeds = true;
+
+        if(ui->checkBox_2->isChecked())
+            people->socialZoneNeeds = true;
     }
 
+    // ФУНКЦИЯ ГРАФИКА (В РАЗРАБОТКЕ)
     //ui->widget->show();
     //graphWidget->setInfected(people->getInfected());
     //graphWidget->setNonInfected(people->getSusceptible());
@@ -201,34 +240,64 @@ void MainWindow::on_addButton_clicked()
     //graphWidget->setDeaths(people->getDeaths());
     //graphWidget->drawGraph();
 
-    //printf("%d %d %d %d %d\n", people->getInfected(), people->getSusceptible(), people->getAsymptomatic(), people->getRecovered(), people->getDeaths());
+    // Прорисовка социальной зоны
+    if(people->socialZoneNeeds == true){
+        QPen pen;
+        pen.setWidth(3);
+        pen.setColor(QColor(255,50,255));
+        QGraphicsRectItem* socialZone = new QGraphicsRectItem(305, 250, 100, 100);
+        QColor color = QColor(15, 15, 15);
+        socialZone->setPen(pen);
+        socialZone->setOpacity(1);
+        socialZone->setBrush(color);
+        socialZone->setZValue(0);
+        safeScene->addItem(socialZone);
+    }
 
-    // Запуск таймеров для отоброжения событий на сцене
+    // Подключение таймеров для отображения анимаций/изменений
+    QObject::connect(&animTimer, &QTimer::timeout, safeScene, &QGraphicsScene::advance);
+    QObject::connect(&animTimer, &QTimer::timeout, quarScene, &QGraphicsScene::advance);
+    QObject::connect(&animTimer, &QTimer::timeout, this, &MainWindow::updateSafeValue);
+    QObject::connect(&animTimer, &QTimer::timeout, this, &MainWindow::updateStatistic);
+
+    // Запуск таймера для отображения событий на сцене
     animTimer.start(frame);
 }
 
 
 void MainWindow::on_addButton_2_clicked()
 {
+    // Перенастройка виджетов
     ui->addButton->setEnabled(true);
+    ui->addButton_2->setEnabled(false);
 
+    ui->label_9->hide();
+    ui->label_10->hide();
+    ui->label_11->hide();
+    ui->label_12->hide();
+    ui->label_13->hide();
+    ui->deadLableValue->hide();
+    ui->InfecLableValue->hide();
+    ui->notInfecLableValue->hide();
+    ui->recoveredLableValue->hide();
+    ui->inviInfecLableValue->hide();
+
+    // Перенастройка виджетов окна
+    safeScene->clear();
+    quarScene->clear();
+    statScene->clear();
+    ui->label_4->hide();
+    ui->safeValueLable->hide();
+
+    //  Очистка списков
     safeAreal->deleteListPeoples();
     quarAreal->deleteListPeoples();
+    statAreal->deleteListPeoples();
 
+    // Остановка таймеров анимаций
     animTimer.stop();
-    //quarTimer.stop();
-    //recoveredTimer.stop();
-
     QObject::disconnect(&animTimer, &QTimer::timeout, safeScene, &QGraphicsScene::advance);
     QObject::disconnect(&animTimer, &QTimer::timeout, quarScene, &QGraphicsScene::advance);
     QObject::disconnect(&animTimer, &QTimer::timeout, this, &MainWindow::updateSafeValue);
-    //QObject::disconnect(&quarTimer, &QTimer::timeout, people, &People::quarCheck);
-    //QObject::disconnect(&recoveredTimer, &QTimer::timeout, people, &People::recoveredCheck);
-
-    safeScene->clear();
-    quarScene->clear();
-
-    ui->label_4->hide();
-    ui->safeValueLable->hide();
+    QObject::disconnect(&animTimer, &QTimer::timeout, this, &MainWindow::updateStatistic);
 }
-
